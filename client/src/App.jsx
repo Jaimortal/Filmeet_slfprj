@@ -51,6 +51,17 @@ export default function App() {
   const [incomingInvite, setIncomingInvite] = useState(null);
   const [outgoingInvite, setOutgoingInvite] = useState(null);
 
+  // Responsive breakpoint watcher to ensure only 1 VideoTile per stream is active in DOM
+  const [isMobileView, setIsMobileView] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileView(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -111,6 +122,11 @@ export default function App() {
       setIncomingInvite(invite);
     });
 
+    socket.on('game_invite_rejected', ({ reason }) => {
+      setOutgoingInvite(null);
+      showEphemeralNotice(reason || 'Game challenge was rejected.');
+    });
+
     socket.on('game_invite_declined', ({ byName }) => {
       setOutgoingInvite(null);
       showEphemeralNotice(`${byName} declined the game.`);
@@ -143,6 +159,7 @@ export default function App() {
       socket.off('new_message');
       socket.off('peer_left');
       socket.off('game_invite_received');
+      socket.off('game_invite_rejected');
       socket.off('game_invite_declined');
       socket.off('game_invite_cancelled');
       socket.off('game_started');
@@ -208,6 +225,14 @@ export default function App() {
   };
 
   const handleOpenGameSelector = () => {
+    if (incomingInvite) {
+      showEphemeralNotice(`${incomingInvite.fromName} already invited you to a game! Confirm or decline on their video.`);
+      return;
+    }
+    if (outgoingInvite) {
+      showEphemeralNotice('Your game challenge is currently waiting for a response...');
+      return;
+    }
     if (isGameOpen) {
       setIsGameOpen(false);
     } else {
@@ -300,52 +325,13 @@ export default function App() {
           </span>
         </div>
 
-        {/* Top Right: Invites, Theme Toggle & Status */}
+        {/* Top Right: Theme Toggle & Ephemeral Badge */}
         <div className="flex items-center gap-2">
-          {/* Incoming Game Challenge Confirm Widget */}
-          {incomingInvite && (
-            <div className="flex items-center gap-1.5 bg-royal-100 dark:bg-royal-950/90 border border-royal-300 dark:border-royal-500/80 rounded-xl px-2.5 py-1 shadow-md animate-fade-in text-xs">
-              <Gamepad2 className="w-4 h-4 text-royal-600 dark:text-royal-400 shrink-0" />
-              <span className="text-slate-800 dark:text-gray-200 text-[11px] hidden xs:inline">
-                <strong className="text-slate-950 dark:text-white">{incomingInvite.fromName}</strong>: <span className="capitalize text-royal-600 dark:text-royal-300 font-bold">{incomingInvite.gameType}</span>
-              </span>
-              <button
-                onClick={handleAcceptInvite}
-                className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] sm:text-[11px] shadow transition cursor-pointer flex items-center gap-0.5"
-              >
-                <Check className="w-3 h-3" /> Confirm
-              </button>
-              <button
-                onClick={handleDeclineInvite}
-                className="p-1 hover:bg-slate-200 dark:hover:bg-dark-800 text-slate-500 dark:text-gray-400 hover:text-red-500 rounded-lg transition cursor-pointer"
-                title="Decline"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-
-          {/* Outgoing Challenge Waiting Pill */}
-          {outgoingInvite && (
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-dark-800 border border-slate-300 dark:border-dark-600 rounded-xl px-2.5 py-1 shadow-sm animate-fade-in text-xs">
-              <Clock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 animate-spin" />
-              <span className="text-slate-700 dark:text-gray-300 text-[11px]">
-                Waiting... <span className="capitalize text-amber-600 dark:text-amber-300 font-bold">{outgoingInvite.gameType}</span>
-              </span>
-              <button
-                onClick={handleCancelInvite}
-                className="px-1.5 py-0.5 bg-slate-200 dark:bg-dark-700 hover:bg-slate-300 dark:hover:bg-dark-600 text-slate-600 dark:text-gray-400 rounded text-[10px] transition cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-
           {/* Theme Toggle Button */}
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
           {/* Ephemeral Indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 rounded-full text-red-600 dark:text-red-300 text-xs font-semibold">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 rounded-full text-red-600 dark:text-red-300 text-xs font-semibold">
             <Flame className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400 animate-pulse" />
             Zero-Trace Mode
           </div>
@@ -378,31 +364,38 @@ export default function App() {
           {/* CASE 1: 2-PLAYER IN-GAME (Flanking Cameras on Desktop; Top Bar on Mobile) */}
           {/* ======================================================== */}
           {inRoom && roomMode === 'pair' && isGameOpen ? (
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
               
-              {/* MOBILE ONLY: Top Bar with both cameras side-by-side */}
-              <div className="md:hidden grid grid-cols-2 gap-2 p-2 h-24 shrink-0 bg-white/90 dark:bg-dark-900/90 border-b border-slate-200 dark:border-dark-800">
-                <div className="h-full rounded-xl overflow-hidden shadow">
-                  <VideoTile
-                    stream={localStream}
-                    isLocal={true}
-                    username={username}
-                    isMicMuted={!isMicOn}
-                    isCamMuted={!isCamOn}
-                    color="#2563EB"
-                    compact={true}
-                  />
+              {/* MOBILE ONLY: Top Bar with both cameras side-by-side (Rendered ONLY on mobile) */}
+              {isMobileView && (
+                <div className="grid grid-cols-2 gap-2 p-2 h-24 shrink-0 bg-white/90 dark:bg-dark-900/90 border-b border-slate-200 dark:border-dark-800">
+                  <div className="h-full rounded-xl overflow-hidden shadow">
+                    <VideoTile
+                      stream={localStream}
+                      isLocal={true}
+                      username={username}
+                      isMicMuted={!isMicOn}
+                      isCamMuted={!isCamOn}
+                      color="#2563EB"
+                      compact={true}
+                      outgoingChallenge={outgoingInvite}
+                      onCancelChallenge={handleCancelInvite}
+                    />
+                  </div>
+                  <div className="h-full rounded-xl overflow-hidden shadow">
+                    <VideoTile
+                      stream={opponentStream}
+                      isLocal={false}
+                      username={opponentPeer?.username || 'Opponent'}
+                      color="#10B981"
+                      compact={true}
+                      incomingChallenge={incomingInvite && incomingInvite.fromId === opponentPeer?.id ? incomingInvite : null}
+                      onAcceptChallenge={handleAcceptInvite}
+                      onDeclineChallenge={handleDeclineInvite}
+                    />
+                  </div>
                 </div>
-                <div className="h-full rounded-xl overflow-hidden shadow">
-                  <VideoTile
-                    stream={opponentStream}
-                    isLocal={false}
-                    username={opponentPeer?.username || 'Opponent'}
-                    color="#10B981"
-                    compact={true}
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Sub-header ribbon for Game Controls */}
               <div className="px-4 py-1.5 bg-white dark:bg-dark-900 border-b border-slate-200 dark:border-dark-800 flex items-center justify-between shrink-0">
@@ -414,7 +407,7 @@ export default function App() {
                 </span>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setIsGameSelectorOpen(true)}
+                    onClick={handleOpenGameSelector}
                     className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-xs font-bold text-slate-700 dark:text-gray-300 transition cursor-pointer"
                   >
                     Switch Game
@@ -430,23 +423,27 @@ export default function App() {
               </div>
 
               {/* DESKTOP + MOBILE GAME ARENA */}
-              <div className="flex-1 flex items-center justify-center md:justify-between p-1 sm:p-4 overflow-y-auto">
+              <div className="flex-1 min-h-0 flex items-center justify-center md:justify-between p-1 sm:p-4 overflow-y-auto">
                 
-                {/* DESKTOP ONLY: Left Camera (Player 1 / You) */}
-                <div className="hidden md:flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
-                  <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-royal-600">
-                    <VideoTile
-                      stream={localStream}
-                      isLocal={true}
-                      username={username}
-                      isMicMuted={!isMicOn}
-                      isCamMuted={!isCamOn}
-                      color="#2563EB"
-                      compact={true}
-                    />
+                {/* DESKTOP ONLY: Left Camera (Player 1 / You) - Rendered ONLY on desktop */}
+                {!isMobileView && (
+                  <div className="flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
+                    <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-royal-600">
+                      <VideoTile
+                        stream={localStream}
+                        isLocal={true}
+                        username={username}
+                        isMicMuted={!isMicOn}
+                        isCamMuted={!isCamOn}
+                        color="#2563EB"
+                        compact={true}
+                        outgoingChallenge={outgoingInvite}
+                        onCancelChallenge={handleCancelInvite}
+                      />
+                    </div>
+                    <span className="text-[11px] font-bold text-royal-600 dark:text-royal-400 mt-1.5">Player 1 (You)</span>
                   </div>
-                  <span className="text-[11px] font-bold text-royal-600 dark:text-royal-400 mt-1.5">Player 1 (You)</span>
-                </div>
+                )}
 
                 {/* CENTER: Fixed, Centered Game Arena */}
                 <div className="flex-1 flex items-center justify-center px-1 sm:px-2 min-w-0">
@@ -486,21 +483,26 @@ export default function App() {
                   )}
                 </div>
 
-                {/* DESKTOP ONLY: Right Camera (Player 2 / Opponent) */}
-                <div className="hidden md:flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
-                  <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-emerald-500">
-                    <VideoTile
-                      stream={opponentStream}
-                      isLocal={false}
-                      username={opponentPeer?.username || 'Opponent'}
-                      color="#10B981"
-                      compact={true}
-                    />
+                {/* DESKTOP ONLY: Right Camera (Player 2 / Opponent) - Rendered ONLY on desktop */}
+                {!isMobileView && (
+                  <div className="flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
+                    <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-emerald-500">
+                      <VideoTile
+                        stream={opponentStream}
+                        isLocal={false}
+                        username={opponentPeer?.username || 'Opponent'}
+                        color="#10B981"
+                        compact={true}
+                        incomingChallenge={incomingInvite && incomingInvite.fromId === opponentPeer?.id ? incomingInvite : null}
+                        onAcceptChallenge={handleAcceptInvite}
+                        onDeclineChallenge={handleDeclineInvite}
+                      />
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">
+                      {opponentPeer?.username || 'Player 2'}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">
-                    {opponentPeer?.username || 'Player 2'}
-                  </span>
-                </div>
+                )}
 
               </div>
 
@@ -509,12 +511,12 @@ export default function App() {
             /* ======================================================== */
             /* CASE 2: REGULAR VIEW (Full Video Grid or Squad Mode) */
             /* ======================================================== */
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
               <div
-                className={`transition-all duration-300 w-full shrink-0 ${
+                className={`transition-all duration-300 w-full min-h-0 flex-1 flex flex-col ${
                   isGameOpen
-                    ? 'h-28 sm:h-36 border-b border-slate-200 dark:border-dark-800 bg-white/90 dark:bg-dark-950/90'
-                    : 'flex-1'
+                    ? 'h-28 sm:h-36 shrink-0 border-b border-slate-200 dark:border-dark-800 bg-white/90 dark:bg-dark-950/90'
+                    : 'h-full'
                 }`}
               >
                 <VideoGrid
@@ -525,6 +527,11 @@ export default function App() {
                   isMicOn={isMicOn}
                   isCamOn={isCamOn}
                   myUsername={username}
+                  incomingInvite={incomingInvite}
+                  onAcceptInvite={handleAcceptInvite}
+                  onDeclineInvite={handleDeclineInvite}
+                  outgoingInvite={outgoingInvite}
+                  onCancelInvite={handleCancelInvite}
                 />
               </div>
 
@@ -628,6 +635,7 @@ export default function App() {
         isChatOpen={isChatOpen}
         onToggleChat={() => setIsChatOpen(!isChatOpen)}
         unreadCount={messages.length}
+        isChallengePending={!!incomingInvite || !!outgoingInvite}
       />
 
     </div>

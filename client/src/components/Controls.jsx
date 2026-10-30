@@ -12,7 +12,8 @@ export default function Controls({
   onToggleGame,
   isChatOpen,
   onToggleChat,
-  unreadCount = 0
+  unreadCount = 0,
+  isChallengePending = false
 }) {
   return (
     <div className="bg-white/95 dark:bg-dark-900/95 border-t border-slate-200 dark:border-dark-700/80 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 backdrop-blur-md transition-colors">
@@ -63,11 +64,16 @@ export default function Controls({
           className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border flex items-center gap-1.5 sm:gap-2 text-xs font-extrabold transition-all shadow-md cursor-pointer ${
             isGameOpen
               ? 'bg-royal-600 border-royal-500 text-white ring-2 ring-royal-400/30'
+              : isChallengePending
+              ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
               : 'bg-royal-50 dark:bg-royal-950/60 border-royal-300 dark:border-royal-700 text-royal-700 dark:text-royal-300 hover:bg-royal-100 dark:hover:bg-royal-900/60'
           }`}
+          title={isChallengePending ? 'A game challenge is pending' : (isGameOpen ? 'Close Game' : 'Mini-Games')}
         >
-          <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span className="hidden md:inline">{isGameOpen ? 'Close Game' : 'Mini-Games'}</span>
+          <Gamepad2 className={`w-4 h-4 sm:w-5 sm:h-5 ${isChallengePending ? 'animate-pulse' : ''}`} />
+          <span className="hidden md:inline">
+            {isGameOpen ? 'Close Game' : (isChallengePending ? 'Invite Pending' : 'Mini-Games')}
+          </span>
         </button>
 
         {/* Chat Toggle (Mobile drawer toggle) */}

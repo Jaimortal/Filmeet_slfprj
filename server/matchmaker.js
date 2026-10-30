@@ -123,6 +123,7 @@ class Matchmaker {
 
     // In 1v1 pair mode: If one person leaves/skips, room dissolves immediately & shreds session
     if (room.mode === 'pair') {
+      room.pendingInvite = null;
       if (room.game) {
         room.game.stop();
       }
@@ -201,11 +202,14 @@ class Matchmaker {
     const roomId = this.socketToRoom.get(socket.id);
     if (!roomId) return;
     const room = this.activeRooms.get(roomId);
-    if (room && room.game) {
-      room.game.stop();
-      room.game = null;
-      room.gameType = null;
-      this.io.to(roomId).emit('game_ended');
+    if (room) {
+      room.pendingInvite = null;
+      if (room.game) {
+        room.game.stop();
+        room.game = null;
+        room.gameType = null;
+        this.io.to(roomId).emit('game_ended');
+      }
     }
   }
 }

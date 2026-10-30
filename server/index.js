@@ -82,18 +82,48 @@ io.on('connection', (socket) => {
   socket.on('request_game', ({ gameType, senderName }) => {
     const roomId = matchmaker.socketToRoom.get(socket.id);
     if (!roomId) return;
-    socket.to(roomId).emit('game_invite_received', {
+    const room = matchmaker.activeRooms.get(roomId);
+    if (!room) return;
+
+    // First come, first served check:
+    if (room.pendingInvite) {
+      socket.emit('game_invite_rejected', {
+        reason: `${room.pendingInvite.fromName} already requested a game.`
+      });
+      return;
+    }
+
+    if (room.game) {
+      socket.emit('game_invite_rejected', {
+        reason: 'A game is already in progress.'
+      });
+      return;
+    }
+
+    room.pendingInvite = {
       fromId: socket.id,
       fromName: senderName || 'Stranger',
       gameType
-    });
+    };
+
+    socket.to(roomId).emit('game_invite_received', room.pendingInvite);
   });
 
   socket.on('accept_game_invite', ({ gameType }) => {
+    const roomId = matchmaker.socketToRoom.get(socket.id);
+    if (roomId) {
+      const room = matchmaker.activeRooms.get(roomId);
+      if (room) room.pendingInvite = null;
+    }
     matchmaker.startGame(socket, gameType);
   });
 
   socket.on('decline_game_invite', ({ fromId, byName }) => {
+    const roomId = matchmaker.socketToRoom.get(socket.id);
+    if (roomId) {
+      const room = matchmaker.activeRooms.get(roomId);
+      if (room) room.pendingInvite = null;
+    }
     if (fromId) {
       io.to(fromId).emit('game_invite_declined', { byName: byName || 'Opponent' });
     }
@@ -102,6 +132,8 @@ io.on('connection', (socket) => {
   socket.on('cancel_game_invite', () => {
     const roomId = matchmaker.socketToRoom.get(socket.id);
     if (!roomId) return;
+    const room = matchmaker.activeRooms.get(roomId);
+    if (room) room.pendingInvite = null;
     socket.to(roomId).emit('game_invite_cancelled');
   });
 
