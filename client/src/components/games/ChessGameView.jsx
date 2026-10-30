@@ -109,8 +109,20 @@ export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
       )}
 
       {/* Chessboard Grid */}
-      <div className="relative rounded-xl overflow-hidden border-2 border-dark-600 shadow-xl bg-dark-800">
-        <div className="grid grid-cols-8 w-[280px] h-[280px] sm:w-[360px] sm:h-[360px]">
+      <div className="relative rounded-xl overflow-hidden border-2 border-dark-600 shadow-2xl bg-dark-800 shrink-0 flex items-center justify-center p-0">
+        <div
+          className="grid select-none"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
+            gridTemplateRows: 'repeat(8, minmax(0, 1fr))',
+            width: '360px',
+            height: '360px',
+            maxWidth: '85vw',
+            maxHeight: '85vw',
+            aspectRatio: '1 / 1'
+          }}
+        >
           {board.map((row, r) =>
             row.map((piece, c) => {
               const isDark = (r + c) % 2 === 1;
@@ -120,24 +132,32 @@ export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
               return (
                 <button
                   key={`${r}-${c}`}
+                  type="button"
                   onClick={() => handleSquareClick(r, c)}
-                  className={`w-full h-full flex items-center justify-center text-2xl sm:text-3xl font-serif select-none transition-colors cursor-pointer ${
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    minWidth: '0',
+                    minHeight: '0',
+                    padding: '0'
+                  }}
+                  className={`relative flex items-center justify-center transition-colors cursor-pointer overflow-hidden ${
                     isSelected
-                      ? 'bg-amber-500/60'
+                      ? 'bg-amber-500/70 ring-2 ring-amber-400 z-10'
                       : isDark
                       ? 'bg-[#4A5568] hover:bg-[#5A6578]'
                       : 'bg-[#CBD5E1] hover:bg-[#E2E8F0]'
                   }`}
                 >
-                  {piece && (
-                    <span
-                      className={`transform transition-transform active:scale-90 ${
-                        piece === piece.toUpperCase() ? 'text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]' : 'text-gray-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]'
-                      }`}
-                    >
-                      {PIECE_SYMBOLS[piece]}
-                    </span>
-                  )}
+                  <span
+                    className={`w-full h-full flex items-center justify-center text-2xl sm:text-3xl font-serif leading-none select-none pointer-events-none transform transition-transform active:scale-90 ${
+                      piece && piece === piece.toUpperCase()
+                        ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]'
+                        : 'text-gray-950 drop-shadow-[0_1px_2px_rgba(255,255,255,0.4)]'
+                    }`}
+                  >
+                    {piece ? PIECE_SYMBOLS[piece] : ''}
+                  </span>
                 </button>
               );
             })
