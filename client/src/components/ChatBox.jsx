@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Flame, ShieldAlert } from 'lucide-react';
+import { Send, Flame, ShieldAlert, X } from 'lucide-react';
 
-export default function ChatBox({ messages, onSendMessage, myId }) {
+export default function ChatBox({ messages, onSendMessage, myId, onClose }) {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef(null);
 
@@ -20,16 +20,28 @@ export default function ChatBox({ messages, onSendMessage, myId }) {
     <div className="flex flex-col h-full bg-dark-800/95 border-l border-dark-700/80">
       
       {/* Header: Ephemeral Self-Destruct Banner */}
-      <div className="p-3 bg-red-950/40 border-b border-red-900/50 flex items-center justify-between">
+      <div className="p-3 bg-red-950/40 border-b border-red-900/50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Flame className="w-4 h-4 text-orange-400 animate-pulse" />
           <span className="text-xs font-bold text-red-300 tracking-wide uppercase">
             Ephemeral Chat
           </span>
+          <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded-full font-semibold hidden sm:inline">
+            Auto-Wipes
+          </span>
         </div>
-        <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-semibold">
-          Auto-Wipes on Skip
-        </span>
+
+        <div className="flex items-center gap-1.5">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 bg-dark-700/80 hover:bg-dark-600 text-gray-300 hover:text-white rounded-lg transition md:hidden cursor-pointer"
+              title="Close Chat"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages Feed */}
@@ -75,7 +87,7 @@ export default function ChatBox({ messages, onSendMessage, myId }) {
       </div>
 
       {/* Message Input */}
-      <form onSubmit={handleSend} className="p-2 sm:p-3 bg-dark-900 border-t border-dark-700/80 flex gap-2">
+      <form onSubmit={handleSend} className="p-2 sm:p-3 bg-dark-900 border-t border-dark-700/80 flex gap-2 shrink-0">
         <input
           type="text"
           value={inputText}

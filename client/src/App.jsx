@@ -67,6 +67,7 @@ export default function App() {
       setGameState(null);
       setActiveGameType(null);
       setIsGameOpen(false);
+      setIsChatOpen(false); // Mobile: Chat starts closed so you immediately see the matched users
       setIncomingInvite(null);
       setOutgoingInvite(null);
 
@@ -174,6 +175,7 @@ export default function App() {
     setGameState(null);
     setActiveGameType(null);
     setIsGameOpen(false);
+    setIsChatOpen(false);
     setIncomingInvite(null);
     setOutgoingInvite(null);
     showEphemeralNotice('Session shredded! Finding next match...');
@@ -189,6 +191,7 @@ export default function App() {
     setGameState(null);
     setActiveGameType(null);
     setIsGameOpen(false);
+    setIsChatOpen(false);
     setIncomingInvite(null);
     setOutgoingInvite(null);
     socket.emit('leave_queue');
@@ -589,17 +592,25 @@ export default function App() {
 
         </div>
 
-        {/* Desktop Chat Side Panel (Always visible on md+, toggled on mobile) */}
+        {/* Desktop Chat Side Panel (Always visible on md+) & Mobile Slide-Out Drawer (Only when opened) */}
         <div
-          className={`w-80 lg:w-96 h-full absolute md:relative right-0 top-0 z-40 transition-transform duration-300 ${
-            isChatOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
+          className={`transition-all duration-300 ${
+            isChatOpen
+              ? 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end md:relative md:inset-auto md:bg-transparent md:w-80 lg:w-96 md:h-full md:z-30'
+              : 'hidden md:block md:w-80 lg:w-96 md:h-full'
           }`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsChatOpen(false);
+          }}
         >
-          <ChatBox
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            myId={socket?.id}
-          />
+          <div className="w-[85vw] max-w-[320px] sm:max-w-sm md:max-w-none md:w-full h-full bg-dark-900 shadow-2xl flex flex-col">
+            <ChatBox
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              myId={socket?.id}
+              onClose={() => setIsChatOpen(false)}
+            />
+          </div>
         </div>
 
       </div>
