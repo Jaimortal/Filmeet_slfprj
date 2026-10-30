@@ -1,0 +1,14 @@
+{
+  "name": "omegasphere",
+  "version": "1.0.0",
+  "description": "Next-gen random matchmaking platform with 4-player squad video lobbies, ephemeral JSON auto-shredding, and multiplayer mini-games.",
+  "scripts": {
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "dev:server": "node server/index.js",
+    "dev:client": "cd client && npm run dev"
+  },
+  "keywords": ["webrtc", "video-chat", "omegle-alternative", "multiplayer-games", "ephemeral"],
+  "author": "",
+  "license": "MIT"
+}
