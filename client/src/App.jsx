@@ -12,6 +12,7 @@ import ThemeToggle from './components/ThemeToggle';
 import SnakeGameView from './components/games/SnakeGameView';
 import ChessGameView from './components/games/ChessGameView';
 import TetrisGameView from './components/games/TetrisGameView';
+import WordBombGameView from './components/games/WordBombGameView';
 import { Flame, Users, X, Gamepad2, Check, Clock } from 'lucide-react';
 
 export default function App() {
@@ -149,6 +150,15 @@ export default function App() {
       setGameState(state);
     });
 
+    socket.on('game_closed', ({ closedById, closedByName }) => {
+      setIsGameOpen(false);
+      setActiveGameType(null);
+      setGameState(null);
+      if (closedById !== socket?.id) {
+        showEphemeralNotice(`Player ${closedByName} closed the game.`);
+      }
+    });
+
     socket.on('game_ended', () => {
       setGameState((prev) => (prev ? { ...prev, status: 'ended' } : null));
     });
@@ -164,6 +174,7 @@ export default function App() {
       socket.off('game_invite_cancelled');
       socket.off('game_started');
       socket.off('game_update');
+      socket.off('game_closed');
       socket.off('game_ended');
     };
   }, [socket, setupMeshConnections, closePeerConnection, closeAllPeerConnections, roomMode, username]);
@@ -224,6 +235,15 @@ export default function App() {
     }
   };
 
+  const handleCloseGame = () => {
+    setIsGameOpen(false);
+    setActiveGameType(null);
+    setGameState(null);
+    if (socket) {
+      socket.emit('stop_game', { closedByName: username });
+    }
+  };
+
   const handleOpenGameSelector = () => {
     if (incomingInvite) {
       showEphemeralNotice(`${incomingInvite.fromName} already invited you to a game! Confirm or decline on their video.`);
@@ -234,7 +254,7 @@ export default function App() {
       return;
     }
     if (isGameOpen) {
-      setIsGameOpen(false);
+      handleCloseGame();
     } else {
       setIsGameSelectorOpen(true);
     }
@@ -307,6 +327,51 @@ export default function App() {
     );
   }
 
+  const PLAYER_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EC4899'];
+
+  const allPeers = peers || [];
+  const myIndex = allPeers.findIndex((p) => p.id === socket?.id);
+  const myColor = PLAYER_COLORS[myIndex >= 0 ? myIndex % 4 : 0];
+
+  const localParticipant = {
+    id: socket?.id,
+    username,
+    isLocal: true,
+    stream: localStream,
+    isMicMuted: !isMicOn,
+    isCamMuted: !isCamOn,
+    color: myColor
+  };
+
+  const remoteParticipants = allPeers
+    .filter((p) => p.id !== socket?.id)
+    .map((peer, idx) => {
+      const pIdx = allPeers.findIndex((p) => p.id === peer.id);
+      const color = PLAYER_COLORS[pIdx >= 0 ? pIdx % 4 : (idx + 1) % 4];
+      return {
+        id: peer.id,
+        username: peer.username,
+        isLocal: false,
+        stream: remoteStreams[peer.id] || null,
+        isMicMuted: false,
+        isCamMuted: false,
+        color
+      };
+    });
+
+  const fullParticipants = [localParticipant, ...remoteParticipants];
+
+  // Distribute cameras flanking left and right (1 each for 1v1, 2 each for 4-player squad)
+  let leftParticipants = [];
+  let rightParticipants = [];
+  if (fullParticipants.length <= 2) {
+    leftParticipants = [fullParticipants[0]];
+    rightParticipants = fullParticipants.slice(1);
+  } else {
+    leftParticipants = fullParticipants.slice(0, 2);
+    rightParticipants = fullParticipants.slice(2);
+  }
+
   const opponentPeer = peers.find((p) => p.id !== socket?.id);
   const opponentStream = opponentPeer ? remoteStreams[opponentPeer.id] : null;
 
@@ -361,39 +426,32 @@ export default function App() {
         <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
           
           {/* ======================================================== */}
-          {/* CASE 1: 2-PLAYER IN-GAME (Flanking Cameras on Desktop; Top Bar on Mobile) */}
+          {/* IN-GAME VIEW vs REGULAR LOBBY VIEW */}
           {/* ======================================================== */}
-          {inRoom && roomMode === 'pair' && isGameOpen ? (
+          {inRoom && isGameOpen ? (
             <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
               
-              {/* MOBILE ONLY: Top Bar with both cameras side-by-side (Rendered ONLY on mobile) */}
+              {/* MOBILE ONLY: Top Bar with compact camera strip (Rendered ONLY on mobile) */}
               {isMobileView && (
-                <div className="grid grid-cols-2 gap-2 p-2 h-24 shrink-0 bg-white/90 dark:bg-dark-900/90 border-b border-slate-200 dark:border-dark-800">
-                  <div className="h-full rounded-xl overflow-hidden shadow">
-                    <VideoTile
-                      stream={localStream}
-                      isLocal={true}
-                      username={username}
-                      isMicMuted={!isMicOn}
-                      isCamMuted={!isCamOn}
-                      color="#2563EB"
-                      compact={true}
-                      outgoingChallenge={outgoingInvite}
-                      onCancelChallenge={handleCancelInvite}
-                    />
-                  </div>
-                  <div className="h-full rounded-xl overflow-hidden shadow">
-                    <VideoTile
-                      stream={opponentStream}
-                      isLocal={false}
-                      username={opponentPeer?.username || 'Opponent'}
-                      color="#10B981"
-                      compact={true}
-                      incomingChallenge={incomingInvite && incomingInvite.fromId === opponentPeer?.id ? incomingInvite : null}
-                      onAcceptChallenge={handleAcceptInvite}
-                      onDeclineChallenge={handleDeclineInvite}
-                    />
-                  </div>
+                <div className={`grid gap-1.5 p-1.5 ${fullParticipants.length <= 2 ? 'grid-cols-2 h-24' : 'grid-cols-4 h-20'} shrink-0 bg-white/90 dark:bg-dark-900/90 border-b border-slate-200 dark:border-dark-800`}>
+                  {fullParticipants.map((p) => (
+                    <div key={p.id} className="h-full rounded-xl overflow-hidden shadow">
+                      <VideoTile
+                        stream={p.stream}
+                        isLocal={p.isLocal}
+                        username={p.username}
+                        isMicMuted={p.isMicMuted}
+                        isCamMuted={p.isCamMuted}
+                        color={p.color}
+                        compact={true}
+                        outgoingChallenge={p.isLocal ? outgoingInvite : null}
+                        onCancelChallenge={p.isLocal ? handleCancelInvite : null}
+                        incomingChallenge={!p.isLocal && incomingInvite?.fromId === p.id ? incomingInvite : null}
+                        onAcceptChallenge={handleAcceptInvite}
+                        onDeclineChallenge={handleDeclineInvite}
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -404,6 +462,7 @@ export default function App() {
                   {activeGameType === 'chess' && 'Live Chess Showdown'}
                   {activeGameType === 'snake' && 'Multiplayer Snake'}
                   {activeGameType === 'tetris' && 'Tetris Battle'}
+                  {activeGameType === 'wordbomb' && '💣 Word Bomb Arena'}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -413,7 +472,7 @@ export default function App() {
                     Switch Game
                   </button>
                   <button
-                    onClick={() => setIsGameOpen(false)}
+                    onClick={handleCloseGame}
                     className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-slate-500 dark:text-gray-400 hover:text-red-500 transition cursor-pointer"
                     title="Close Game"
                   >
@@ -425,23 +484,35 @@ export default function App() {
               {/* DESKTOP + MOBILE GAME ARENA */}
               <div className="flex-1 min-h-0 flex items-center justify-center md:justify-between p-1 sm:p-4 overflow-y-auto">
                 
-                {/* DESKTOP ONLY: Left Camera (Player 1 / You) - Rendered ONLY on desktop */}
+                {/* DESKTOP ONLY: Left Flanking Cameras (1 or 2 players stacked vertically) */}
                 {!isMobileView && (
-                  <div className="flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
-                    <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-royal-600">
-                      <VideoTile
-                        stream={localStream}
-                        isLocal={true}
-                        username={username}
-                        isMicMuted={!isMicOn}
-                        isCamMuted={!isCamOn}
-                        color="#2563EB"
-                        compact={true}
-                        outgoingChallenge={outgoingInvite}
-                        onCancelChallenge={handleCancelInvite}
-                      />
-                    </div>
-                    <span className="text-[11px] font-bold text-royal-600 dark:text-royal-400 mt-1.5">Player 1 (You)</span>
+                  <div className="flex flex-col items-center justify-center gap-2.5 shrink-0 w-44 lg:w-52">
+                    {leftParticipants.map((p) => (
+                      <div key={p.id} className="w-full flex flex-col items-center">
+                        <div
+                          className={`w-full ${leftParticipants.length > 1 ? 'h-24 lg:h-28' : 'h-32 lg:h-36'} rounded-xl overflow-hidden shadow-xl border-2`}
+                          style={{ borderColor: p.color }}
+                        >
+                          <VideoTile
+                            stream={p.stream}
+                            isLocal={p.isLocal}
+                            username={p.username}
+                            isMicMuted={p.isMicMuted}
+                            isCamMuted={p.isCamMuted}
+                            color={p.color}
+                            compact={true}
+                            outgoingChallenge={p.isLocal ? outgoingInvite : null}
+                            onCancelChallenge={p.isLocal ? handleCancelInvite : null}
+                            incomingChallenge={!p.isLocal && incomingInvite?.fromId === p.id ? incomingInvite : null}
+                            onAcceptChallenge={handleAcceptInvite}
+                            onDeclineChallenge={handleDeclineInvite}
+                          />
+                        </div>
+                        <span className="text-[11px] font-bold mt-1 truncate max-w-full" style={{ color: p.color }}>
+                          {p.username} {p.isLocal && '(You)'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -481,26 +552,47 @@ export default function App() {
                       myUsername={username}
                     />
                   )}
+
+                  {activeGameType === 'wordbomb' && (
+                    <WordBombGameView
+                      gameState={gameState}
+                      onInput={(inputData) => handleGameInput(inputData)}
+                      onRestart={handleRestartGame}
+                      myId={socket?.id}
+                      socket={socket}
+                    />
+                  )}
                 </div>
 
-                {/* DESKTOP ONLY: Right Camera (Player 2 / Opponent) - Rendered ONLY on desktop */}
+                {/* DESKTOP ONLY: Right Flanking Cameras (1 or 2 players stacked vertically) */}
                 {!isMobileView && (
-                  <div className="flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
-                    <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-emerald-500">
-                      <VideoTile
-                        stream={opponentStream}
-                        isLocal={false}
-                        username={opponentPeer?.username || 'Opponent'}
-                        color="#10B981"
-                        compact={true}
-                        incomingChallenge={incomingInvite && incomingInvite.fromId === opponentPeer?.id ? incomingInvite : null}
-                        onAcceptChallenge={handleAcceptInvite}
-                        onDeclineChallenge={handleDeclineInvite}
-                      />
-                    </div>
-                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">
-                      {opponentPeer?.username || 'Player 2'}
-                    </span>
+                  <div className="flex flex-col items-center justify-center gap-2.5 shrink-0 w-44 lg:w-52">
+                    {rightParticipants.map((p) => (
+                      <div key={p.id} className="w-full flex flex-col items-center">
+                        <div
+                          className={`w-full ${rightParticipants.length > 1 ? 'h-24 lg:h-28' : 'h-32 lg:h-36'} rounded-xl overflow-hidden shadow-xl border-2`}
+                          style={{ borderColor: p.color }}
+                        >
+                          <VideoTile
+                            stream={p.stream}
+                            isLocal={p.isLocal}
+                            username={p.username}
+                            isMicMuted={p.isMicMuted}
+                            isCamMuted={p.isCamMuted}
+                            color={p.color}
+                            compact={true}
+                            outgoingChallenge={p.isLocal ? outgoingInvite : null}
+                            onCancelChallenge={p.isLocal ? handleCancelInvite : null}
+                            incomingChallenge={!p.isLocal && incomingInvite?.fromId === p.id ? incomingInvite : null}
+                            onAcceptChallenge={handleAcceptInvite}
+                            onDeclineChallenge={handleDeclineInvite}
+                          />
+                        </div>
+                        <span className="text-[11px] font-bold mt-1 truncate max-w-full" style={{ color: p.color }}>
+                          {p.username} {p.isLocal && '(You)'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -509,16 +601,10 @@ export default function App() {
             </div>
           ) : (
             /* ======================================================== */
-            /* CASE 2: REGULAR VIEW (Full Video Grid or Squad Mode) */
+            /* REGULAR LOBBY VIEW (Full-Screen Video Grid) */
             /* ======================================================== */
             <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
-              <div
-                className={`transition-all duration-300 w-full min-h-0 flex-1 flex flex-col ${
-                  isGameOpen
-                    ? 'h-28 sm:h-36 shrink-0 border-b border-slate-200 dark:border-dark-800 bg-white/90 dark:bg-dark-950/90'
-                    : 'h-full'
-                }`}
-              >
+              <div className="w-full min-h-0 flex-1 flex flex-col h-full">
                 <VideoGrid
                   peers={peers}
                   myId={socket?.id}
@@ -534,66 +620,6 @@ export default function App() {
                   onCancelInvite={handleCancelInvite}
                 />
               </div>
-
-              {isGameOpen && (
-                <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-dark-950/95 overflow-y-auto">
-                  <div className="px-4 py-1.5 bg-white dark:bg-dark-900 border-b border-slate-200 dark:border-dark-800 flex items-center justify-between shrink-0">
-                    <span className="text-xs font-bold text-royal-600 dark:text-royal-400 flex items-center gap-1.5">
-                      <Gamepad2 className="w-4 h-4" /> Squad Game
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setIsGameSelectorOpen(true)}
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-xs font-bold text-slate-700 dark:text-gray-300 transition cursor-pointer"
-                      >
-                        Switch Game
-                      </button>
-                      <button
-                        onClick={() => setIsGameOpen(false)}
-                        className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-slate-500 dark:text-gray-400 hover:text-red-500 transition cursor-pointer"
-                        title="Close Game"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
-                    {activeGameType === 'snake' && (
-                      <SnakeGameView
-                        gameState={gameState}
-                        onInput={(direction) => handleGameInput({ direction })}
-                        onRestart={handleRestartGame}
-                        myId={socket?.id}
-                      />
-                    )}
-                    {activeGameType === 'chess' && (
-                      <ChessGameView
-                        gameState={gameState}
-                        onMove={(moveData) => handleGameInput(moveData)}
-                        onRestart={handleRestartGame}
-                        myId={socket?.id}
-                      />
-                    )}
-                    {activeGameType === 'tetris' && (
-                      <TetrisGameView
-                        gameState={gameState}
-                        onAction={(action) => handleGameInput({ action })}
-                        onVote={(vote) => handleGameInput({ vote })}
-                        onRestart={handleRestartGame}
-                        myId={socket?.id}
-                        mode={roomMode}
-                        peers={peers}
-                        localStream={localStream}
-                        remoteStreams={remoteStreams}
-                        isMicOn={isMicOn}
-                        isCamOn={isCamOn}
-                        myUsername={username}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

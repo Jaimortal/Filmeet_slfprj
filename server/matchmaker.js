@@ -3,6 +3,7 @@ const sessionStore = require('./sessionStore');
 const SnakeBattle = require('./games/SnakeBattle');
 const ChessMatch = require('./games/ChessMatch');
 const TetrisBattle = require('./games/TetrisBattle');
+const WordBomb = require('./games/WordBomb');
 
 class Matchmaker {
   constructor(io) {
@@ -175,6 +176,8 @@ class Matchmaker {
       room.game = new ChessMatch(roomId, room.players, this.io);
     } else if (gameType === 'tetris') {
       room.game = new TetrisBattle(roomId, room.players, this.io);
+    } else if (gameType === 'wordbomb') {
+      room.game = new WordBomb(roomId, room.players, this.io);
     }
 
     this.io.to(roomId).emit('game_started', {
@@ -195,10 +198,12 @@ class Matchmaker {
       room.game.handleMove(socket.id, input);
     } else if (room.gameType === 'tetris') {
       room.game.handleInput(socket.id, input.action !== undefined ? input.action : input);
+    } else if (room.gameType === 'wordbomb') {
+      room.game.handleInput(socket.id, input.word !== undefined ? input.word : input);
     }
   }
 
-  stopGame(socket) {
+  stopGame(socket, closedByName = 'A player') {
     const roomId = this.socketToRoom.get(socket.id);
     if (!roomId) return;
     const room = this.activeRooms.get(roomId);
@@ -208,8 +213,12 @@ class Matchmaker {
         room.game.stop();
         room.game = null;
         room.gameType = null;
-        this.io.to(roomId).emit('game_ended');
       }
+      this.io.to(roomId).emit('game_closed', {
+        closedById: socket.id,
+        closedByName: closedByName || 'A player'
+      });
+      this.io.to(roomId).emit('game_ended');
     }
   }
 }

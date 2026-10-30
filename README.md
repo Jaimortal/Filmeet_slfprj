@@ -26,6 +26,7 @@
 | ♟️ **Live Chess Showdown** | 1v1 Pair (or 2 players + spectators in Squad) | Full chess rules engine via `chess.js`. Legal moves, check indicator, checkmate/draw alerts, dynamic perspective (Black automatically faces Black), and 1-click **Rematch (Swap Sides)**. | Click piece $\rightarrow$ Click destination square. |
 | 🐍 **Multiplayer Snake Battle** | 2 to 4 Players | Real-time arena survival. Color-coded snakes matching player video tiles. Eat food, grow, avoid walls and other snakes. Round-end trophy celebration. | **PC**: Arrow keys / `W, A, S, D`<br>**Mobile**: On-screen touch D-Pad. |
 | 🧱 **Tetris Battle** | 2 to 4 Players | **Multiplayer Attacks**: Clearing 2+ lines sends penalty garbage rows to opponents! Pre-game voting for target score (500 pts, 1,000 pts, 2,500 pts, or Survival Mode). Live dual-board streaming in 1v1. | **PC**: Arrow keys + Space bar to hard drop.<br>**Mobile**: On-screen Rotate, Drop, and direction buttons. |
+| 💣 **Word Bomb Showdown** | 2 to 4 Players | **Fast-Paced Word Combat**: Ticking bomb with syllable prompt (e.g. `[ MA ]`, `[ TER ]`). 3 lives per player. Type valid words before timer explodes! Supported by 17,000+ English & Tagalog words. | **Keyboard/Mobile**: Type word containing prompt and press Enter / "Defuse". |
 
 ---
 

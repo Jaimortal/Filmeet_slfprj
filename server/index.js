@@ -145,8 +145,8 @@ io.on('connection', (socket) => {
     matchmaker.handleGameInput(socket, input);
   });
 
-  socket.on('stop_game', () => {
-    matchmaker.stopGame(socket);
+  socket.on('stop_game', ({ closedByName } = {}) => {
+    matchmaker.stopGame(socket, closedByName);
   });
 
   // 5. Disconnect
@@ -169,4 +169,14 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Filmeet server running on http://0.0.0.0:${PORT}`);
+
+// This 👇 is during for development, change it to 👆 for production
+
+// server.listen(PORT, () => {
+//   console.log(`🚀 Filmeet server running at:`);
+//   console.log(`   - Local:   http://localhost:${PORT}`);
+//   console.log(`   - Network: http://127.0.0.1:${PORT}`);
+
 });
+
+// lol life is hard, why not make it harder

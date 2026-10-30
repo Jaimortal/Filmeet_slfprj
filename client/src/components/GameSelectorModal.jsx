@@ -6,6 +6,14 @@ export default function GameSelectorModal({ isOpen, onClose, onSelectGame, mode 
 
   const games = [
     {
+      id: 'wordbomb',
+      name: '💣 Word Bomb',
+      badge: '2–4 Players',
+      desc: 'Type a word with the letters before the bomb explodes! Fast & frantic.',
+      color: 'from-amber-600 to-rose-600 text-white',
+      border: 'border-amber-500/50'
+    },
+    {
       id: 'chess',
       name: 'Chess Showdown',
       badge: mode === 'squad' ? '1v1 + Spectators' : '1v1 Match',
