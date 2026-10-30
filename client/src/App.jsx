@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useWebRTC } from './hooks/useWebRTC';
+import { useTheme } from './hooks/useTheme';
 import LobbySelection from './components/LobbySelection';
 import VideoGrid from './components/VideoGrid';
 import VideoTile from './components/VideoTile';
 import ChatBox from './components/ChatBox';
 import Controls from './components/Controls';
 import GameSelectorModal from './components/GameSelectorModal';
+import ThemeToggle from './components/ThemeToggle';
 import SnakeGameView from './components/games/SnakeGameView';
 import ChessGameView from './components/games/ChessGameView';
 import TetrisGameView from './components/games/TetrisGameView';
 import { Flame, Users, X, Gamepad2, Check, Clock } from 'lucide-react';
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
   const { socket } = useSocket();
   const {
     localStream,
@@ -40,13 +43,13 @@ export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(false);
   const [isGameOpen, setIsGameOpen] = useState(false);
-  const [activeGameType, setActiveGameType] = useState(null); // 'snake' | 'chess' | 'tetris'
+  const [activeGameType, setActiveGameType] = useState(null);
   const [gameState, setGameState] = useState(null);
   const [systemAlert, setSystemAlert] = useState(null);
 
-  // Game Challenge / Invite States (Top-Right Confirmation)
-  const [incomingInvite, setIncomingInvite] = useState(null); // { fromId, fromName, gameType }
-  const [outgoingInvite, setOutgoingInvite] = useState(null); // { gameType }
+  // Game Challenge / Invite States
+  const [incomingInvite, setIncomingInvite] = useState(null);
+  const [outgoingInvite, setOutgoingInvite] = useState(null);
 
   // Socket event listeners
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function App() {
       setGameState(null);
       setActiveGameType(null);
       setIsGameOpen(false);
-      setIsChatOpen(false); // Mobile: Chat starts closed so you immediately see the matched users
+      setIsChatOpen(false);
       setIncomingInvite(null);
       setOutgoingInvite(null);
 
@@ -91,6 +94,7 @@ export default function App() {
         setMessages([]);
         setGameState(null);
         setActiveGameType(null);
+        setIsChatOpen(false);
         setIncomingInvite(null);
         setOutgoingInvite(null);
         if (socket) {
@@ -211,16 +215,13 @@ export default function App() {
     }
   };
 
-  // Player clicks a game in the hub
   const handleSelectGame = (gameId) => {
     if (roomMode === 'pair') {
-      // 2-Player mode: Send challenge to opponent (Anti-spam)
       setOutgoingInvite({ gameType: gameId });
       if (socket) {
         socket.emit('request_game', { gameType: gameId, senderName: username });
       }
     } else {
-      // Squad mode: Start immediately
       setActiveGameType(gameId);
       setGameState(null);
       if (socket) {
@@ -230,7 +231,6 @@ export default function App() {
     }
   };
 
-  // Accept incoming challenge
   const handleAcceptInvite = () => {
     if (!incomingInvite) return;
     const gType = incomingInvite.gameType;
@@ -243,7 +243,6 @@ export default function App() {
     setIsGameOpen(true);
   };
 
-  // Decline incoming challenge
   const handleDeclineInvite = () => {
     if (!incomingInvite) return;
     if (socket) {
@@ -252,7 +251,6 @@ export default function App() {
     setIncomingInvite(null);
   };
 
-  // Cancel outgoing challenge
   const handleCancelInvite = () => {
     if (socket) {
       socket.emit('cancel_game_invite');
@@ -278,37 +276,38 @@ export default function App() {
         onJoinQueue={handleJoinQueue}
         queueStatus={queueStatus}
         onLeaveQueue={handleLeaveQueue}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
     );
   }
 
-  // Identify opponent for 1v1
   const opponentPeer = peers.find((p) => p.id !== socket?.id);
   const opponentStream = opponentPeer ? remoteStreams[opponentPeer.id] : null;
 
   return (
-    <div className="h-screen w-screen bg-dark-950 text-white flex flex-col overflow-hidden select-none">
+    <div className="h-screen w-screen bg-slate-100 dark:bg-dark-950 text-slate-900 dark:text-white flex flex-col overflow-hidden select-none transition-colors duration-200">
       
       {/* Top Bar */}
-      <header className="h-12 sm:h-14 px-3 sm:px-4 bg-dark-900 border-b border-dark-700/80 flex items-center justify-between z-10 shrink-0">
+      <header className="h-12 sm:h-14 px-3 sm:px-4 bg-white dark:bg-dark-900 border-b border-slate-200 dark:border-dark-700/80 flex items-center justify-between z-10 shrink-0 transition-colors">
         <div className="flex items-center gap-2 sm:gap-3">
-          <h2 className="text-base sm:text-lg font-black tracking-wider text-white">
-            OMEGA<span className="text-indigo-400">SPHERE</span>
+          <h2 className="text-base sm:text-lg font-black tracking-wider text-slate-900 dark:text-white">
+            FIL<span className="text-royal-600 dark:text-royal-400">MEET</span>
           </h2>
-          <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-dark-800 border border-dark-600 text-[11px] sm:text-xs text-gray-300 font-semibold flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-royal-50 dark:bg-dark-800 border border-royal-200 dark:border-dark-600 text-[11px] sm:text-xs text-royal-700 dark:text-gray-300 font-bold flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-royal-600 dark:text-royal-400" />
             {roomMode === 'squad' ? 'Squad (4-Way)' : '1v1 Pair'}
           </span>
         </div>
 
-        {/* Top Right: Game Challenge & Shredder Notification */}
+        {/* Top Right: Invites, Theme Toggle & Status */}
         <div className="flex items-center gap-2">
-          {/* Incoming Game Challenge Confirm Widget (Top Right, Small) */}
+          {/* Incoming Game Challenge Confirm Widget */}
           {incomingInvite && (
-            <div className="flex items-center gap-1.5 bg-indigo-950/90 border border-indigo-500/80 rounded-xl px-2.5 py-1 shadow-lg shadow-indigo-500/20 animate-fade-in text-xs">
-              <Gamepad2 className="w-4 h-4 text-indigo-400 shrink-0" />
-              <span className="text-gray-200 text-[11px] hidden xs:inline">
-                <strong className="text-white">{incomingInvite.fromName}</strong>: <span className="capitalize text-indigo-300 font-bold">{incomingInvite.gameType}</span>
+            <div className="flex items-center gap-1.5 bg-royal-100 dark:bg-royal-950/90 border border-royal-300 dark:border-royal-500/80 rounded-xl px-2.5 py-1 shadow-md animate-fade-in text-xs">
+              <Gamepad2 className="w-4 h-4 text-royal-600 dark:text-royal-400 shrink-0" />
+              <span className="text-slate-800 dark:text-gray-200 text-[11px] hidden xs:inline">
+                <strong className="text-slate-950 dark:text-white">{incomingInvite.fromName}</strong>: <span className="capitalize text-royal-600 dark:text-royal-300 font-bold">{incomingInvite.gameType}</span>
               </span>
               <button
                 onClick={handleAcceptInvite}
@@ -318,7 +317,7 @@ export default function App() {
               </button>
               <button
                 onClick={handleDeclineInvite}
-                className="p-1 hover:bg-dark-800 text-gray-400 hover:text-white rounded-lg transition cursor-pointer"
+                className="p-1 hover:bg-slate-200 dark:hover:bg-dark-800 text-slate-500 dark:text-gray-400 hover:text-red-500 rounded-lg transition cursor-pointer"
                 title="Decline"
               >
                 <X className="w-3 h-3" />
@@ -328,23 +327,26 @@ export default function App() {
 
           {/* Outgoing Challenge Waiting Pill */}
           {outgoingInvite && (
-            <div className="flex items-center gap-1.5 bg-dark-800/90 border border-dark-600 rounded-xl px-2.5 py-1 shadow-lg animate-fade-in text-xs">
-              <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-              <span className="text-gray-300 text-[11px]">
-                Waiting... <span className="capitalize text-amber-300 font-bold">{outgoingInvite.gameType}</span>
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-dark-800 border border-slate-300 dark:border-dark-600 rounded-xl px-2.5 py-1 shadow-sm animate-fade-in text-xs">
+              <Clock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 animate-spin" />
+              <span className="text-slate-700 dark:text-gray-300 text-[11px]">
+                Waiting... <span className="capitalize text-amber-600 dark:text-amber-300 font-bold">{outgoingInvite.gameType}</span>
               </span>
               <button
                 onClick={handleCancelInvite}
-                className="px-1.5 py-0.5 bg-dark-700 hover:bg-dark-600 text-gray-400 hover:text-white rounded text-[10px] transition cursor-pointer"
+                className="px-1.5 py-0.5 bg-slate-200 dark:bg-dark-700 hover:bg-slate-300 dark:hover:bg-dark-600 text-slate-600 dark:text-gray-400 rounded text-[10px] transition cursor-pointer"
               >
                 Cancel
               </button>
             </div>
           )}
 
+          {/* Theme Toggle Button */}
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+
           {/* Ephemeral Indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 bg-red-950/40 border border-red-500/30 rounded-full text-red-300 text-xs font-semibold">
-            <Flame className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 rounded-full text-red-600 dark:text-red-300 text-xs font-semibold">
+            <Flame className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400 animate-pulse" />
             Zero-Trace Mode
           </div>
         </div>
@@ -352,7 +354,7 @@ export default function App() {
 
       {/* Floating System Ephemeral Toast */}
       {systemAlert && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 border border-red-500/50 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-red-900/95 border border-red-500/60 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
           <Flame className="w-4 h-4 text-orange-400" />
           {systemAlert}
         </div>
@@ -373,13 +375,13 @@ export default function App() {
         <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
           
           {/* ======================================================== */}
-          {/* CASE 1: 2-PLAYER IN-GAME (Camera Left + Game + Camera Right on Desktop; Cameras Top on Mobile) */}
+          {/* CASE 1: 2-PLAYER IN-GAME (Flanking Cameras on Desktop; Top Bar on Mobile) */}
           {/* ======================================================== */}
           {inRoom && roomMode === 'pair' && isGameOpen ? (
             <div className="flex-1 flex flex-col h-full overflow-hidden">
               
               {/* MOBILE ONLY: Top Bar with both cameras side-by-side */}
-              <div className="md:hidden grid grid-cols-2 gap-2 p-2 h-24 shrink-0 bg-dark-900/90 border-b border-dark-800">
+              <div className="md:hidden grid grid-cols-2 gap-2 p-2 h-24 shrink-0 bg-white/90 dark:bg-dark-900/90 border-b border-slate-200 dark:border-dark-800">
                 <div className="h-full rounded-xl overflow-hidden shadow">
                   <VideoTile
                     stream={localStream}
@@ -387,7 +389,7 @@ export default function App() {
                     username={username}
                     isMicMuted={!isMicOn}
                     isCamMuted={!isCamOn}
-                    color="#6366F1"
+                    color="#2563EB"
                     compact={true}
                   />
                 </div>
@@ -403,8 +405,8 @@ export default function App() {
               </div>
 
               {/* Sub-header ribbon for Game Controls */}
-              <div className="px-4 py-1.5 bg-dark-900 border-b border-dark-800 flex items-center justify-between shrink-0">
-                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+              <div className="px-4 py-1.5 bg-white dark:bg-dark-900 border-b border-slate-200 dark:border-dark-800 flex items-center justify-between shrink-0">
+                <span className="text-xs font-bold text-royal-600 dark:text-royal-400 flex items-center gap-1.5">
                   <Gamepad2 className="w-4 h-4" />
                   {activeGameType === 'chess' && 'Live Chess Showdown'}
                   {activeGameType === 'snake' && 'Multiplayer Snake'}
@@ -413,13 +415,13 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsGameSelectorOpen(true)}
-                    className="px-2 py-0.5 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-lg text-xs font-semibold text-gray-300 transition cursor-pointer"
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-xs font-bold text-slate-700 dark:text-gray-300 transition cursor-pointer"
                   >
                     Switch Game
                   </button>
                   <button
                     onClick={() => setIsGameOpen(false)}
-                    className="p-1 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-lg text-gray-400 hover:text-white transition cursor-pointer"
+                    className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-slate-500 dark:text-gray-400 hover:text-red-500 transition cursor-pointer"
                     title="Close Game"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -432,18 +434,18 @@ export default function App() {
                 
                 {/* DESKTOP ONLY: Left Camera (Player 1 / You) */}
                 <div className="hidden md:flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
-                  <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-500">
+                  <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-royal-600">
                     <VideoTile
                       stream={localStream}
                       isLocal={true}
                       username={username}
                       isMicMuted={!isMicOn}
                       isCamMuted={!isCamOn}
-                      color="#6366F1"
+                      color="#2563EB"
                       compact={true}
                     />
                   </div>
-                  <span className="text-[11px] font-bold text-indigo-400 mt-1.5">Player 1 (You)</span>
+                  <span className="text-[11px] font-bold text-royal-600 dark:text-royal-400 mt-1.5">Player 1 (You)</span>
                 </div>
 
                 {/* CENTER: Fixed, Centered Game Arena */}
@@ -486,7 +488,7 @@ export default function App() {
 
                 {/* DESKTOP ONLY: Right Camera (Player 2 / Opponent) */}
                 <div className="hidden md:flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
-                  <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-500">
+                  <div className="w-full h-32 lg:h-36 rounded-xl overflow-hidden shadow-xl border-2 border-emerald-500">
                     <VideoTile
                       stream={opponentStream}
                       isLocal={false}
@@ -495,7 +497,7 @@ export default function App() {
                       compact={true}
                     />
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-400 mt-1.5">
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">
                     {opponentPeer?.username || 'Player 2'}
                   </span>
                 </div>
@@ -508,11 +510,10 @@ export default function App() {
             /* CASE 2: REGULAR VIEW (Full Video Grid or Squad Mode) */
             /* ======================================================== */
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-              {/* Video Grid */}
               <div
                 className={`transition-all duration-300 w-full shrink-0 ${
                   isGameOpen
-                    ? 'h-28 sm:h-36 border-b border-dark-800 bg-dark-950/90'
+                    ? 'h-28 sm:h-36 border-b border-slate-200 dark:border-dark-800 bg-white/90 dark:bg-dark-950/90'
                     : 'flex-1'
                 }`}
               >
@@ -527,23 +528,22 @@ export default function App() {
                 />
               </div>
 
-              {/* Squad Mode In-Game Arena */}
               {isGameOpen && (
-                <div className="flex-1 flex flex-col min-h-0 bg-dark-950/95 overflow-y-auto">
-                  <div className="px-4 py-1.5 bg-dark-900 border-b border-dark-800 flex items-center justify-between shrink-0">
-                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-dark-950/95 overflow-y-auto">
+                  <div className="px-4 py-1.5 bg-white dark:bg-dark-900 border-b border-slate-200 dark:border-dark-800 flex items-center justify-between shrink-0">
+                    <span className="text-xs font-bold text-royal-600 dark:text-royal-400 flex items-center gap-1.5">
                       <Gamepad2 className="w-4 h-4" /> Squad Game
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setIsGameSelectorOpen(true)}
-                        className="px-2.5 py-1 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-lg text-xs font-semibold text-gray-300 transition cursor-pointer"
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-xs font-bold text-slate-700 dark:text-gray-300 transition cursor-pointer"
                       >
                         Switch Game
                       </button>
                       <button
                         onClick={() => setIsGameOpen(false)}
-                        className="p-1.5 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-lg text-gray-400 hover:text-white transition cursor-pointer"
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-slate-500 dark:text-gray-400 hover:text-red-500 transition cursor-pointer"
                         title="Close Game"
                       >
                         <X className="w-4 h-4" />
@@ -592,7 +592,7 @@ export default function App() {
 
         </div>
 
-        {/* Desktop Chat Side Panel (Always visible on md+) & Mobile Slide-Out Drawer (Only when opened) */}
+        {/* Desktop Chat Side Panel & Mobile Slide-Out Drawer */}
         <div
           className={`transition-all duration-300 ${
             isChatOpen
@@ -603,7 +603,7 @@ export default function App() {
             if (e.target === e.currentTarget) setIsChatOpen(false);
           }}
         >
-          <div className="w-[85vw] max-w-[320px] sm:max-w-sm md:max-w-none md:w-full h-full bg-dark-900 shadow-2xl flex flex-col">
+          <div className="w-[85vw] max-w-[320px] sm:max-w-sm md:max-w-none md:w-full h-full bg-white dark:bg-dark-900 shadow-2xl flex flex-col border-l border-slate-200 dark:border-dark-700">
             <ChatBox
               messages={messages}
               onSendMessage={handleSendMessage}

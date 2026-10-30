@@ -20,7 +20,7 @@ export default function VideoTile({
 
   return (
     <div
-      className={`relative w-full h-full bg-dark-900 rounded-xl overflow-hidden border-2 transition-all flex items-center justify-center shadow-lg group ${
+      className={`relative w-full h-full bg-slate-100 dark:bg-dark-900 rounded-xl overflow-hidden border-2 transition-all flex items-center justify-center shadow-lg group ${
         compact ? 'min-h-[80px]' : 'min-h-[140px] sm:min-h-[180px]'
       }`}
       style={{ borderColor: color }}
@@ -44,7 +44,7 @@ export default function VideoTile({
           >
             {username.slice(0, 2).toUpperCase()}
           </div>
-          <span className="text-[10px] text-gray-400 font-medium">Camera Off</span>
+          <span className="text-[10px] text-slate-500 dark:text-gray-400 font-medium">Camera Off</span>
         </div>
       )}
 
@@ -61,7 +61,7 @@ export default function VideoTile({
       </div>
 
       {/* Bottom Status Controls */}
-      <div className={`absolute ${compact ? 'bottom-1.5 right-1.5' : 'bottom-2.5 right-2.5'} flex items-center gap-1 bg-dark-900/80 backdrop-blur-md px-1.5 py-0.5 rounded-md border border-dark-700`}>
+      <div className={`absolute ${compact ? 'bottom-1.5 right-1.5' : 'bottom-2.5 right-2.5'} flex items-center gap-1 bg-white/80 dark:bg-dark-900/80 backdrop-blur-md px-1.5 py-0.5 rounded-md border border-slate-300 dark:border-dark-700`}>
         {isMicMuted ? (
           <MicOff className="w-3 h-3 text-red-400" />
         ) : (

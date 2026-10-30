@@ -1,21 +1,21 @@
-# 🌌 OmegaSphere
+# 🇵🇭 Filmeet
 
-> **Next-Generation Random Video Discovery & Squad Chat with Ephemeral Data Auto-Shredding and Real-Time Multiplayer Mini-Games.**  
+> **Connect, Chat, and Play — Filipino Random Video Discovery & Squad Lobbies with Ephemeral Data Auto-Shredding.**  
 > Built **100% with Free and Open-Source Software (FOSS)**. Zero paid APIs, zero subscriptions.
 
 ---
 
 ## 🌟 Overview
 
-**OmegaSphere** reimagines the classic random video chat experience (Omegle / Chatroulette / Houseparty) by eliminating awkward silences, prioritizing strict user privacy, and introducing spontaneous group interactions:
+**Filmeet** (*Filipino Meets*) is a spontaneous video discovery and party chat platform designed to connect people through genuine face-to-face conversations and casual multiplayer mini-games:
 
-1. **Flexible Matchmaking Modes**: Pair up 1-on-1 or assemble a random **Squad of 4** in a 4-peer video room.
-2. **Zero-Trace Ephemeral Storage**: Room chats and event history are stored only in temporary session JSON files. When any player skips or the room disbands, the server **cryptographically shreds the session file** with random noise before deleting it from disk.
-3. **Integrated Mini-Games Hub**: Play instant multiplayer games directly in the room without leaving the video call.
+1. **Two Matchmaking Modes**: Connect 1-on-1 or assemble a random **Squad of 4** in a shared 4-peer video room.
+2. **Strict Ephemeral Privacy (Zero Permanent Logs)**: Room chats and event history are stored only in temporary session JSON files. When any user skips or leaves, the server **cryptographically shreds the session file** with random noise before deleting it from disk.
+3. **Interactive Mini-Games Suite**: Play **Chess**, **Snake Battle**, and **Tetris** directly in the room without leaving the video call.
 4. **Anti-Spam Game Challenge System**: Players cannot unilaterally force or spam game changes; game requests require confirmation via an unobtrusive top-right prompt.
-5. **Adaptive Video Layouts**:
+5. **Adaptive Layouts**:
    - **Desktop**: Live cameras flank the left and right sides of the game arena so videos are never blocked and no screen space is wasted.
-   - **Mobile**: Dual cameras sit at the top in a compact row, with the responsive game arena vertically centered below.
+   - **Mobile**: Dual cameras sit at the top in a compact row, with the responsive game arena vertically centered below, and the chat drawer cleanly hidden until opened.
 
 ---
 
@@ -23,8 +23,8 @@
 
 | Game | Modes | Gameplay Highlights | Controls |
 | :--- | :--- | :--- | :--- |
-| ♟️ **Live Chess Showdown** | 1v1 Pair (or 2 players + spectators in Squad) | Full chess rules engine via `chess.js`. Legal moves, check indicator, checkmate/draw alerts, and 1-click **Rematch (Swap Sides)**. | Click piece $\rightarrow$ Click destination square. |
-| 🐍 **Multiplayer Snake Battle** | 2 to 4 Players | Real-time Tron-style arena survival. Color-coded snakes matching player video tiles. Eat food, grow, avoid walls and other snakes. Round-end trophy celebration. | **PC**: Arrow keys / `W, A, S, D`<br>**Mobile**: On-screen touch D-Pad. |
+| ♟️ **Live Chess Showdown** | 1v1 Pair (or 2 players + spectators in Squad) | Full chess rules engine via `chess.js`. Legal moves, check indicator, checkmate/draw alerts, dynamic perspective (Black automatically faces Black), and 1-click **Rematch (Swap Sides)**. | Click piece $\rightarrow$ Click destination square. |
+| 🐍 **Multiplayer Snake Battle** | 2 to 4 Players | Real-time arena survival. Color-coded snakes matching player video tiles. Eat food, grow, avoid walls and other snakes. Round-end trophy celebration. | **PC**: Arrow keys / `W, A, S, D`<br>**Mobile**: On-screen touch D-Pad. |
 | 🧱 **Tetris Battle** | 2 to 4 Players | **Multiplayer Attacks**: Clearing 2+ lines sends penalty garbage rows to opponents! Pre-game voting for target score (500 pts, 1,000 pts, 2,500 pts, or Survival Mode). Live dual-board streaming in 1v1. | **PC**: Arrow keys + Space bar to hard drop.<br>**Mobile**: On-screen Rotate, Drop, and direction buttons. |
 
 ---
@@ -74,7 +74,7 @@ Cameras flank the left and right of the board, using empty space and keeping the
 ```
 
 ### Mobile Layout (In-Game)
-Both cameras sit in a compact top bar with the game centered below:
+Both cameras sit in a compact top bar with the game centered below, and chat hidden by default:
 ```
 +---------------------------------------------------+
 |                   Header Bar                      |
@@ -112,7 +112,7 @@ Both cameras sit in a compact top bar with the game centered below:
 
 ### Prerequisites
 * [Node.js](https://nodejs.org/) (v18 or higher)
-* [ngrok](https://ngrok.com/) (Optional, for mobile testing)
+* [ngrok](https://ngrok.com/) (Optional, for mobile local network testing)
 
 ### Installation
 Clone the repository and install dependencies:
@@ -147,12 +147,19 @@ node server/index.js
 ```
 The application will be live at `http://localhost:5000`.
 
-#### 3. Expose via ngrok (for Mobile Phone & Remote Testing)
-In a separate terminal:
-```bash
-ngrok http 5000
-```
-Open the generated HTTPS URL on both your PC and smartphone!
+---
+
+## ☁️ Deploying to Render
+
+When deploying as a **Web Service** on [Render](https://render.com/):
+
+| Setting | Value |
+| :--- | :--- |
+| **Language** | `Node` |
+| **Build Command** | `npm run build` |
+| **Start Command** | `node server/index.js` |
+
+Render provides an automatic free `https://` SSL certificate so WebRTC camera and mic permissions work natively on all devices.
 
 ---
 

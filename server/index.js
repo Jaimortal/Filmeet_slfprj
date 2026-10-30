@@ -136,5 +136,5 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 OmegaSphere server running on http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Filmeet server running on http://0.0.0.0:${PORT}`);
 });

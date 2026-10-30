@@ -15,72 +15,72 @@ export default function Controls({
   unreadCount = 0
 }) {
   return (
-    <div className="bg-dark-900/95 border-t border-dark-700/80 px-4 py-3 flex items-center justify-between gap-2 backdrop-blur-md">
+    <div className="bg-white/95 dark:bg-dark-900/95 border-t border-slate-200 dark:border-dark-700/80 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 backdrop-blur-md transition-colors">
       
       {/* Left: Leave Button */}
       <div className="flex items-center gap-2">
         <button
           onClick={onLeave}
           title="Leave Lobby"
-          className="p-2.5 sm:px-3 sm:py-2 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-xl text-gray-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition"
+          className="p-2 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-xl text-slate-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
         >
-          <LogOut className="w-4 h-4 text-red-400" />
+          <LogOut className="w-4 h-4 text-red-500" />
           <span className="hidden sm:inline">Exit</span>
         </button>
       </div>
 
       {/* Center: Media Toggles & Game Launch */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2.5">
         {/* Mic */}
         <button
           onClick={onToggleMic}
-          className={`p-3 rounded-xl border transition-all ${
+          className={`p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer ${
             isMicOn
-              ? 'bg-dark-800 border-dark-600 text-white hover:bg-dark-700'
-              : 'bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30'
+              ? 'bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border-slate-300 dark:border-dark-600 text-slate-800 dark:text-white'
+              : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
           }`}
           title={isMicOn ? 'Mute Mic' : 'Unmute Mic'}
         >
-          {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+          {isMicOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-royal-600 dark:text-royal-400" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
         </button>
 
         {/* Cam */}
         <button
           onClick={onToggleCam}
-          className={`p-3 rounded-xl border transition-all ${
+          className={`p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer ${
             isCamOn
-              ? 'bg-dark-800 border-dark-600 text-white hover:bg-dark-700'
-              : 'bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30'
+              ? 'bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border-slate-300 dark:border-dark-600 text-slate-800 dark:text-white'
+              : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
           }`}
           title={isCamOn ? 'Turn Off Cam' : 'Turn On Cam'}
         >
-          {isCamOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+          {isCamOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5 text-royal-600 dark:text-royal-400" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
         </button>
 
-        {/* Game Panel Toggle */}
+        {/* Game Panel Toggle (Royal Blue Brand) */}
         <button
           onClick={onToggleGame}
-          className={`px-3.5 py-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all shadow-md ${
+          className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border flex items-center gap-1.5 sm:gap-2 text-xs font-extrabold transition-all shadow-md cursor-pointer ${
             isGameOpen
-              ? 'bg-emerald-600 border-emerald-500 text-white'
-              : 'bg-dark-800 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+              ? 'bg-royal-600 border-royal-500 text-white ring-2 ring-royal-400/30'
+              : 'bg-royal-50 dark:bg-royal-950/60 border-royal-300 dark:border-royal-700 text-royal-700 dark:text-royal-300 hover:bg-royal-100 dark:hover:bg-royal-900/60'
           }`}
         >
-          <Gamepad2 className="w-5 h-5" />
+          <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5" />
           <span className="hidden md:inline">{isGameOpen ? 'Close Game' : 'Mini-Games'}</span>
         </button>
 
         {/* Chat Toggle (Mobile drawer toggle) */}
         <button
           onClick={onToggleChat}
-          className={`relative p-3 rounded-xl border md:hidden transition-all ${
+          className={`relative p-2.5 sm:p-3 rounded-xl border md:hidden transition-all cursor-pointer ${
             isChatOpen
-              ? 'bg-indigo-600 border-indigo-500 text-white'
-              : 'bg-dark-800 border-dark-600 text-gray-300'
+              ? 'bg-royal-600 border-royal-500 text-white'
+              : 'bg-slate-100 dark:bg-dark-800 border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300'
           }`}
           title="Toggle Chat"
         >
-          <MessageSquare className="w-5 h-5" />
+          <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
           {unreadCount > 0 && !isChatOpen && (
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
               {unreadCount}
@@ -89,11 +89,11 @@ export default function Controls({
         </button>
       </div>
 
-      {/* Right: The Famous SKIP / NEXT Button */}
+      {/* Right: The SKIP / NEXT Button */}
       <div className="flex items-center">
         <button
           onClick={onSkip}
-          className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-red-600/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          className="px-3.5 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-lg shadow-red-600/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
           <FastForward className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
           <span>SKIP / NEXT</span>
