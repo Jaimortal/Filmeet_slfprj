@@ -425,7 +425,7 @@ export default function App() {
               </div>
 
               {/* DESKTOP + MOBILE GAME ARENA */}
-              <div className="flex-1 flex items-center justify-between p-2 sm:p-4 overflow-y-auto">
+              <div className="flex-1 flex items-center justify-center md:justify-between p-1 sm:p-4 overflow-y-auto">
                 
                 {/* DESKTOP ONLY: Left Camera (Player 1 / You) */}
                 <div className="hidden md:flex flex-col items-center justify-center shrink-0 w-44 lg:w-52">
@@ -444,7 +444,7 @@ export default function App() {
                 </div>
 
                 {/* CENTER: Fixed, Centered Game Arena */}
-                <div className="flex-1 flex items-center justify-center px-2 min-w-0">
+                <div className="flex-1 flex items-center justify-center px-1 sm:px-2 min-w-0">
                   {activeGameType === 'chess' && (
                     <ChessGameView
                       gameState={gameState}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Trophy, RotateCcw, Eye, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trophy, RotateCcw, Eye, Shield, ArrowLeftRight } from 'lucide-react';
 
 // Unicode chess piece lookup
 const PIECE_SYMBOLS = {
@@ -9,6 +9,16 @@ const PIECE_SYMBOLS = {
 
 export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
   const [selectedSquare, setSelectedSquare] = useState(null);
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  // Auto-flip board to Black perspective when user is Black
+  useEffect(() => {
+    if (gameState?.black?.id && myId === gameState.black.id) {
+      setIsFlipped(true);
+    } else {
+      setIsFlipped(false);
+    }
+  }, [myId, gameState?.black?.id]);
 
   // Guard against undefined state or mismatch when switching games
   if (!gameState || !gameState.fen || !gameState.white || !gameState.black) {
@@ -66,65 +76,79 @@ export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
       if (selectedSquare === square) {
         setSelectedSquare(null);
       } else {
-        // Attempt move
+        // Attempt move in standard algebraic notation
         onMove({ from: selectedSquare, to: square, promotion: 'q' });
         setSelectedSquare(null);
       }
     }
   };
 
+  // Orientation rows & columns: inverted for Black perspective
+  const displayRows = isFlipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+  const displayCols = isFlipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+
   return (
-    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-dark-900/95 rounded-2xl border border-dark-700 shadow-2xl max-w-full">
+    <div className="flex flex-col items-center justify-center p-2 sm:p-4 bg-dark-900/95 rounded-2xl border border-dark-700 shadow-2xl max-w-full">
       
       {/* Matchup Header */}
-      <div className="w-full flex items-center justify-between gap-2 mb-3 px-2">
-        <div className="flex items-center gap-2">
-          <div className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 ${turn === 'w' ? 'border-amber-400/80 bg-amber-500/10 text-amber-300' : 'border-dark-600 bg-dark-800 text-gray-400'}`}>
-            <span className="w-2.5 h-2.5 rounded-full bg-white border border-gray-400 inline-block"></span>
+      <div className="w-full flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-3 px-1 sm:px-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 ${turn === 'w' ? 'border-amber-400/80 bg-amber-500/10 text-amber-300' : 'border-dark-600 bg-dark-800 text-gray-400'}`}>
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white border border-gray-400 inline-block"></span>
             <span>{white.username}</span>
           </div>
-          <span className="text-gray-500 text-xs font-bold">vs</span>
-          <div className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 ${turn === 'b' ? 'border-amber-400/80 bg-amber-500/10 text-amber-300' : 'border-dark-600 bg-dark-800 text-gray-400'}`}>
-            <span className="w-2.5 h-2.5 rounded-full bg-gray-900 border border-gray-600 inline-block"></span>
+          <span className="text-gray-500 text-[10px] sm:text-xs font-bold">vs</span>
+          <div className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 ${turn === 'b' ? 'border-amber-400/80 bg-amber-500/10 text-amber-300' : 'border-dark-600 bg-dark-800 text-gray-400'}`}>
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-gray-900 border border-gray-600 inline-block"></span>
             <span>{black.username}</span>
           </div>
         </div>
 
-        {/* Role & Spectators */}
-        <div className="flex items-center gap-2 text-xs">
+        {/* Role, Spectators & Flip Button */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs">
           <span className="text-gray-400 font-medium">You: <strong className="text-indigo-400">{myRole}</strong></span>
+          
           {spectators && spectators.length > 0 && (
-            <div className="flex items-center gap-1 text-[11px] text-gray-500 bg-dark-800 px-2 py-0.5 rounded-md border border-dark-700">
+            <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-gray-500 bg-dark-800 px-1.5 py-0.5 rounded-md border border-dark-700">
               <Eye className="w-3 h-3" /> {spectators.length}
             </div>
           )}
+
+          {/* Flip Perspective Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsFlipped(!isFlipped)}
+            className="p-1 hover:bg-dark-800 text-gray-400 hover:text-white rounded-md transition text-[10px] flex items-center gap-1 cursor-pointer"
+            title="Flip Board Perspective"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Flip</span>
+          </button>
         </div>
       </div>
 
       {/* Check Notification */}
       {inCheck && !isCheckmate && (
-        <div className="w-full mb-2 py-1 px-3 bg-red-950/60 border border-red-500/50 rounded-lg text-center text-xs font-bold text-red-300 flex items-center justify-center gap-1.5">
+        <div className="w-full mb-1.5 py-0.5 px-2 bg-red-950/60 border border-red-500/50 rounded-lg text-center text-xs font-bold text-red-300 flex items-center justify-center gap-1.5">
           <Shield className="w-3.5 h-3.5" /> CHECK!
         </div>
       )}
 
-      {/* Chessboard Grid */}
+      {/* Chessboard Grid (Strictly square on both mobile & desktop) */}
       <div className="relative rounded-xl overflow-hidden border-2 border-dark-600 shadow-2xl bg-dark-800 shrink-0 flex items-center justify-center p-0">
         <div
           className="grid select-none"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
-            gridTemplateRows: 'repeat(8, minmax(0, 1fr))',
-            width: '360px',
-            height: '360px',
-            maxWidth: '85vw',
-            maxHeight: '85vw',
-            aspectRatio: '1 / 1'
+            gridTemplateColumns: 'repeat(8, clamp(32px, 10.5vw, 45px))',
+            gridTemplateRows: 'repeat(8, clamp(32px, 10.5vw, 45px))',
+            width: 'fit-content',
+            height: 'fit-content'
           }}
         >
-          {board.map((row, r) =>
-            row.map((piece, c) => {
+          {displayRows.map((r) =>
+            displayCols.map((c) => {
+              const piece = board[r][c];
               const isDark = (r + c) % 2 === 1;
               const squareName = `${files[c]}${8 - r}`;
               const isSelected = selectedSquare === squareName;
@@ -135,11 +159,13 @@ export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
                   type="button"
                   onClick={() => handleSquareClick(r, c)}
                   style={{
-                    width: '100%',
-                    height: '100%',
+                    width: 'clamp(32px, 10.5vw, 45px)',
+                    height: 'clamp(32px, 10.5vw, 45px)',
                     minWidth: '0',
                     minHeight: '0',
-                    padding: '0'
+                    padding: '0',
+                    margin: '0',
+                    boxSizing: 'border-box'
                   }}
                   className={`relative flex items-center justify-center transition-colors cursor-pointer overflow-hidden ${
                     isSelected
@@ -150,7 +176,8 @@ export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
                   }`}
                 >
                   <span
-                    className={`w-full h-full flex items-center justify-center text-2xl sm:text-3xl font-serif leading-none select-none pointer-events-none transform transition-transform active:scale-90 ${
+                    style={{ fontSize: 'clamp(18px, 6vw, 28px)' }}
+                    className={`w-full h-full flex items-center justify-center font-serif leading-none select-none pointer-events-none transform transition-transform active:scale-90 ${
                       piece && piece === piece.toUpperCase()
                         ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]'
                         : 'text-gray-950 drop-shadow-[0_1px_2px_rgba(255,255,255,0.4)]'
@@ -174,7 +201,7 @@ export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
             </p>
             <button
               onClick={onRestart}
-              className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-xs flex items-center gap-2 shadow-lg transition"
+              className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-xs flex items-center gap-2 shadow-lg transition cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" /> Rematch (Swap Sides)
             </button>
@@ -182,11 +209,10 @@ export default function ChessGameView({ gameState, onMove, onRestart, myId }) {
         )}
       </div>
 
-      <div className="mt-3 text-[11px] text-gray-500 text-center">
+      <div className="mt-2 sm:mt-3 text-[11px] text-gray-500 text-center">
         {myRole === 'Spectator' ? 'Spectating match live' : isMyTurn ? '👉 Your turn! Click piece, then destination square' : "Waiting for opponent's move..."}
       </div>
 
     </div>
   );
 }
-
